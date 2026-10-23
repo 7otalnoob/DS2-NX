@@ -1,5 +1,11 @@
 name: build-ds2-nx
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag a compilar (vacío = la última versión)"
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -13,10 +19,19 @@ jobs:
           apt-get install -y --no-install-recommends git cmake ninja-build python3 ca-certificates build-essential
           dkp-pacman -S --noconfirm switch-dev deko3d
 
-      - name: Clonar ds2-nx v1.0.5
+      - name: Buscar versión
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG=$(git ls-remote --tags --refs --sort=-v:refname https://github.com/VasilkovND/ds2-nx 'v*' | head -n1 | sed 's|.*refs/tags/||')
+          fi
+          echo "Compilando $TAG"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Clonar ds2-nx
         run: |
           git config --global --add safe.directory '*'
-          git clone --branch v1.0.5 https://github.com/VasilkovND/ds2-nx
+          git clone --branch "$TAG" https://github.com/VasilkovND/ds2-nx
 
       - name: Compilar
         working-directory: ds2-nx
@@ -27,5 +42,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ds2-nx-1.0.5
+          name: ds2-nx-${{ env.TAG }}
           path: ds2-nx.nro
