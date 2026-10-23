@@ -1,0 +1,31 @@
+name: build-ds2-nx
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64
+    timeout-minutes: 240
+    steps:
+      - name: Dependencias
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git cmake ninja-build python3 ca-certificates build-essential
+          dkp-pacman -S --noconfirm switch-dev deko3d
+
+      - name: Clonar ds2-nx v1.0.5
+        run: |
+          git config --global --add safe.directory '*'
+          git clone --branch v1.0.5 https://github.com/VasilkovND/ds2-nx
+
+      - name: Compilar
+        working-directory: ds2-nx
+        run: bash deadspace2/tools/build_mac.sh
+
+      - name: Renombrar NRO
+        run: cp ds2-nx/deadspace2/out/sw/deadspace2.nro ds2-nx.nro
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ds2-nx-1.0.5
+          path: ds2-nx.nro
